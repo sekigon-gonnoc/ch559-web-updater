@@ -301,15 +301,17 @@ class Ch559Bootloader {
     }
   }
 
-  private async initBootloader(): Promise<{
-    version: string;
-    checksum: number;
-  }> {
+  private async openPort() {
     this.serial = new WebSerial(128, 5);
     this.serial.setReceiveCallback(this.receiveResponse.bind(this));
     await this.serial.open(null, 57600);
     this.serial.startReadLoop();
+  }
 
+  private async initBootloader(): Promise<{
+    version: string;
+    checksum: number;
+  }> {
     await this.detect();
     let { version, checksum } = await this.getCfg();
     console.log(`Ch55x version ${version}, checksum ${checksum}`);
@@ -318,47 +320,60 @@ class Ch559Bootloader {
   }
 
   async flash(bin: Uint8Array, progress: (msg: string) => void = () => {}) {
-    let cfg = await this.initBootloader();
+    await this.openPort();
 
-    await this.eraseChip(bin.length);
+    try {
+      let cfg = await this.initBootloader();
 
-    await this.sendKey();
+      await this.eraseChip(bin.length);
 
-    progress("write start.\n");
+      await this.sendKey();
 
-    await this.opBinFile(bin, "write", cfg.checksum, 0x59, (_a, _b) => {
-      progress(".");
-    });
+      progress("write start.\n");
 
-    progress("write complete.\n");
+      await this.opBinFile(bin, "write", cfg.checksum, 0x59, (_a, _b) => {
+        progress(".");
+      });
 
-    await this.sendKey();
+      progress("write complete.\n");
 
-    progress("verify start.\n");
+      await this.sendKey();
 
-    await this.opBinFile(bin, "verify", cfg.checksum, 0x59, (_a, _b) => {
-      progress(".");
-    });
+      progress("verify start.\n");
 
-    await this.serial.close();
+      await this.opBinFile(bin, "verify", cfg.checksum, 0x59, (_a, _b) => {
+        progress(".");
+      });
 
-    progress("verify complete.\n");
+      progress("verify complete.\n");
+    } catch (e) {
+      progress("\n" + e.toString() + "\n");
+      progress("Flash failed.\n");
+    } finally {
+      await this.serial.close();
+    }
   }
 
   async verify(bin: Uint8Array, progress: (msg: string) => void = () => {}) {
-    let cfg = await this.initBootloader();
+    await this.openPort();
+    try {
+      let cfg = await this.initBootloader();
 
-    await this.sendKey();
+      await this.sendKey();
 
-    progress("verify start.\n");
+      progress("verify start.\n");
 
-    await this.opBinFile(bin, "verify", cfg.checksum, 0x59, (_a, _b) => {
-      progress(".");
-    });
+      await this.opBinFile(bin, "verify", cfg.checksum, 0x59, (_a, _b) => {
+        progress(".");
+      });
 
-    await this.serial.close();
-
-    progress("verify complete.\n");
+      progress("verify complete.\n");
+    } catch (e) {
+      progress("\n" + e.toString() + "\n");
+      progress("Verify failed.\n");
+    } finally {
+      await this.serial.close();
+    }
   }
 }
 
