@@ -356,6 +356,7 @@ class Ch559Bootloader {
 
   async verify(bin: Uint8Array, progress: (msg: string) => void = () => {}) {
     await this.openPort();
+
     try {
       let cfg = await this.initBootloader();
 
