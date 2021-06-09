@@ -12,8 +12,18 @@ if (!navigator.serial) {
 }
 
 async function verifyFirmware() {
-  let bin = await fetch("./CH559USB.bin").then((r) => {
-    return r.arrayBuffer();
+  const version = document.getElementById("version").value;
+  const filePath = `./CH559USB_${version}.bin`;
+  console.log(`Load ${filePath}`);
+
+  let bin = await fetch(filePath).then((r) => {
+    console.log(r.headers);
+    if (r.ok) {
+      return r.arrayBuffer();
+    } else {
+      progress.innerHTML = "File not found";
+      throw new Error("File not found\n");
+    }
   });
   let u8array = new Uint8Array(bin);
 
