@@ -11,7 +11,7 @@ if (!navigator.serial) {
   console.error("Web serial is unavailable");
 }
 
-async function verifyFirmware() {
+async function loadFirmware() {
   const version = document.getElementById("version").value;
   const filePath = `./CH559USB_${version}.bin`;
   console.log(`Load ${filePath}`);
@@ -25,7 +25,11 @@ async function verifyFirmware() {
       throw new Error("File not found\n");
     }
   });
-  let u8array = new Uint8Array(bin);
+  return new Uint8Array(bin);
+}
+
+async function verifyFirmware() {
+  let u8array = await loadFirmware();
 
   progress.innerHTML =
     "Connect Keyboard Quantizer with bootloader keymap, and select serial port appreared.\n";
@@ -36,10 +40,7 @@ async function verifyFirmware() {
 }
 
 async function flashFirmware() {
-  let bin = await fetch("./CH559USB.bin").then((r) => {
-    return r.arrayBuffer();
-  });
-  let u8array = new Uint8Array(bin);
+  let u8array = await loadFirmware();
 
   progress.innerHTML =
     "Connect Keyboard Quantizer with bootloader keymap, and select serial port appreared.\n";
