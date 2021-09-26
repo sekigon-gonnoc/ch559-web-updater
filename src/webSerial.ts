@@ -29,7 +29,9 @@ class WebSerial {
   }
 
   async open(onConnect: () => void | null, baudrate: number = 115200) {
-    this.port = await navigator.serial.requestPort();
+    this.port = await navigator.serial.requestPort({
+      filters: [{ usbVendorId: 0xfeed, usbProductId: 0x9999 }],
+    });
 
     try {
       await this.port.open({ baudRate: baudrate, buffersize: 81920 });
